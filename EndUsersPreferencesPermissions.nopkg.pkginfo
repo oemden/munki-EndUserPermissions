@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>OnDemand</key>
+	<false/>
+	<key>_metadata</key>
+	<dict>
+		<key>creation_date</key>
+		<date>2019-10-15T08:58:11Z</date>
+		<key>munki_version</key>
+		<string>3.6.3.3784</string>
+		<key>os_version</key>
+		<string>10.14.6</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>production</string>
+	</array>
+	<key>category</key>
+	<string>Config_Computers</string>
+	<key>description</key>
+	<string>Attribuer les permissions sur date time, print, network aux endusers, etc…
+Pour pouvoir installer des imprimantes à la maison le wifi etc…</string>
+	<key>developer</key>
+	<string>Service IT</string>
+	<key>display_name</key>
+	<string>EndUsersPreferencesPermissions</string>
+	<key>installcheck_script</key>
+	<string>#!/bin/bash
+# Oem at oemden dot com
+# 20211129
+# Give all end-users permissions full access to Print Scan, Network, Time Preference Pane
+# MUNKI Install Check Script
+# exit 0 NOT INSTALLED - aka run the script or reinstall
+# exit 1 OK - don't install
+version=0.2.2
+# NEEDS to be ROOT
+
+user_permissions=( "system.preferences" "system.preferences.datetime" "system.preferences.0datetime" "system.preferences.network" "system.services.systemconfiguration.network" "system.preferences.printing" "system.print.operator" )
+
+function READ_enduser_permissions () {
+ ##${1} is the Preference checked.
+ /usr/bin/security authorizationdb read "${1}" > /tmp/"${1}".plist 2>&1
+ defaults read /tmp/"${1}".plist rule | grep allow | sed 's/ //g' ; rm -f /tmp/"${1}".plist
+}
+
+function CHECK_enduser_permissions () {
+ ##${1} is the Preference checked.
+ USER_Permission=$(READ_enduser_permissions "${1}" )
+
+ if [[ "${USER_Permission}" != "allow" ]] ; then
+  echo "permission ${1} not set"
+  Set_Permission=1
+ fi
+}
+
+for enduser_permission in ${user_permissions[@]} ; do
+ echo
+ CHECK_enduser_permissions "${enduser_permission}"
+ #echo "Set_Permission: ${Set_Permission} "
+done
+
+echo "Set_Permission: ${Set_Permission}"
+
+if [[ "${Set_Permission}" -eq "1" ]] ; then
+ exit 0
+else
+ exit 1
+fi
+
+</string>
+	<key>installer_type</key>
+	<string>nopkg</string>
+	<key>minimum_os_version</key>
+	<string>10.4.0</string>
+	<key>name</key>
+	<string>EndUsersPreferencesPermissions</string>
+	<key>postinstall_script</key>
+	<string>#!/bin/bash
+# Oem at oemden dot com
+# 20211015
+# Give all end-users permissions full access to Print Scan, Network, Time Preference Pane
+# borrowed from Original source firstboot script from : 25-LS-Corporate-Config-Script-OSX-10.10DP8_v7 by Daniel Rheiner
+
+version=0.2.2
+# NEEDS to be ROOT
+
+security authorizationdb write system.preferences allow
+security authorizationdb write system.preferences.datetime allow
+security authorizationdb write system.preferences.network allow
+security authorizationdb write system.services.systemconfiguration.network allow
+security authorizationdb write system.preferences.printing allow
+/usr/bin/security authorizationdb write system.print.operator allow
+/usr/sbin/dseditgroup -o edit -n /Local/Default -a everyone -t group lpadmin
+/usr/sbin/dseditgroup -o edit -n /Local/Default -a everyone -t group _lpadmin
+#/usr/sbin/dseditgroup -o edit -n /Local/Default -a 'Domain Users' -t group lpadmin
+#/usr/sbin/dseditgroup -o edit -n /Local/Default -a 'Utilisateurs du domaine' -t group lpadmin
+/usr/sbin/dseditgroup -o edit -n /Local/Default -a 'localaccounts' -t group lpadmin
+/usr/sbin/dseditgroup -o edit -n /Local/Default -a 'netaccounts' -t group lpadmin
+
+exit 0
+
+</string>
+	<key>unattended_install</key>
+	<true/>
+	<key>version</key>
+	<string>0.2.2</string>
+</dict>
+</plist>
